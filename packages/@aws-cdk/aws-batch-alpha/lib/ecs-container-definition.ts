@@ -903,6 +903,14 @@ export interface IEcsFargateContainerDefinition extends IEcsContainerDefinition 
  */
 export interface EcsFargateContainerDefinitionProps extends EcsContainerDefinitionProps {
   /**
+   * The ephemeral storage of the Fartage task.
+   * You must specify a size greater than or equal 20 GiB and lower than or equal to 200 GiB.
+   *
+   * @default 20
+   */
+  readonly ephemeralStorage?: Size;
+
+  /**
    * Indicates whether the job has a public IP address.
    * For a job that's running on Fargate resources in a private subnet to send outbound traffic to the internet
    * (for example, to pull container images), the private subnet requires a NAT gateway be attached to route requests to the internet.
@@ -934,6 +942,7 @@ export interface EcsFargateContainerDefinitionProps extends EcsContainerDefiniti
  * A container orchestrated by ECS that uses Fargate resources
  */
 export class EcsFargateContainerDefinition extends EcsContainerDefinitionBase implements IEcsFargateContainerDefinition {
+  public readonly ephemeralStorage?: Size;
   public readonly fargatePlatformVersion?: ecs.FargatePlatformVersion;
   public readonly assignPublicIp?: boolean;
 
@@ -957,7 +966,7 @@ export class EcsFargateContainerDefinition extends EcsContainerDefinitionBase im
    * @internal
    */
   public _renderContainerDefinition(): CfnJobDefinition.ContainerPropertiesProperty {
-    return {
+    const containerProperties = {
       ...super._renderContainerDefinition(),
       fargatePlatformConfiguration: {
         platformVersion: this.fargatePlatformVersion?.toString(),
@@ -966,6 +975,14 @@ export class EcsFargateContainerDefinition extends EcsContainerDefinitionBase im
         assignPublicIp: this.assignPublicIp ? 'ENABLED' : 'DISABLED',
       },
     };
+
+    if (this.ephemeralStorage) {
+      containerProperties.ephemeralStorage = {
+        sizeInGiB: this.ephemeralStorage.toGibibytes(),
+      };
+    }
+
+    return containerProperties;
   };
 }
 
